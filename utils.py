@@ -25,8 +25,8 @@ class ClockwiseRotation(BoardTransformation):
         for i, angle in enumerate([90, 180, 270]):
             permutation = self.identity.copy()
             permutation[0:243] = np.rot90(np.rot90(self.board, k=-(i+1), axes=(0,1)), k=-(i+1), axes=(2,3)).flatten()
-            permutation[243:270] = np.rot90(self.large_board, k=-(i+1), axes=(0,1)).flatten()
-            permutation[270:279] = np.rot90(self.legal_zones, k=-(i+1), axes=(0,1)).flatten()
+            permutation[243:279] = np.rot90(self.large_board, k=-(i+1), axes=(0,1)).flatten()
+            permutation[279:288] = np.rot90(self.legal_zones, k=-(i+1), axes=(0,1)).flatten()
 
             self.perms[angle] = permutation
 
@@ -43,15 +43,15 @@ class Reflection(BoardTransformation):
         for i, direction in enumerate(["vert", "horiz"]):
             permutation = self.identity.copy()
             permutation[0:243] = np.flip(self.board, axis=(i,i+2)).flatten()
-            permutation[243:270] = np.flip(self.large_board, axis=i).flatten()
-            permutation[270:279] = np.flip(self.legal_zones, axis=i).flatten()
+            permutation[243:279] = np.flip(self.large_board, axis=i).flatten()
+            permutation[279:288] = np.flip(self.legal_zones, axis=i).flatten()
 
             self.perms[direction] = permutation
         
         diag_reflection = self.identity.copy()
         diag_reflection[0:243] = np.transpose(self.board, axes=(1,0,3,2,4)).flatten()
-        diag_reflection[243:270] = np.transpose(self.large_board, axes=(1,0,2)).flatten()
-        diag_reflection[270:279] = np.transpose(self.legal_zones, axes=(1,0)).flatten()
+        diag_reflection[243:279] = np.transpose(self.large_board, axes=(1,0,2)).flatten()
+        diag_reflection[279:288] = np.transpose(self.legal_zones, axes=(1,0)).flatten()
 
         self.perms["diag"] = diag_reflection
 

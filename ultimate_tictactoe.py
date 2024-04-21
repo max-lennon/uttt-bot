@@ -4,8 +4,9 @@ class UltimateTicTacToe:
     def __init__(self, board_size=(3,3,3,3)):
         self.board_size = board_size
         self.board = np.concatenate([np.zeros(board_size+(2,)), np.ones(board_size+(1,))], axis=-1).astype(np.float32)
-        self.large_board = np.concatenate([np.zeros(board_size[:2]+(2,)), np.ones(board_size[:2]+(1,))], axis=-1).astype(np.float32)
+        self.large_board = np.concatenate([np.zeros(board_size[:2]+(3,)), np.ones(board_size[:2]+(1,))], axis=-1).astype(np.float32)
 
+        self.eye4 = np.eye(4).astype(np.float32)
         self.eye3 = np.eye(3).astype(np.float32)
         self.eye2 = np.eye(2).astype(np.float32)
         self.eye9 = np.eye(9).astype(np.float32)
@@ -18,7 +19,7 @@ class UltimateTicTacToe:
         self.current_player = 0
         self.move_count = 0
         self.legal_zones = np.ones(board_size[:2])
-        self.winner = 2
+        self.outcome = 3
 
         self.move_history = []
 
@@ -47,7 +48,7 @@ class UltimateTicTacToe:
         large_row, large_col, small_row, small_col = move
 
         # Check if the move is valid
-        game_over = self.winner < 2
+        game_over = self.outcome < 2 or np.sum(self.board[..., 2]) == 0
         spot_taken = self.board[large_row, large_col, small_row, small_col, 2] == 0
         illegal_zone = self.legal_zones[large_row, large_col] == 0
 
@@ -68,16 +69,23 @@ class UltimateTicTacToe:
         # Check for a win in the small board
         if self.check_small_board_win(large_row, large_col, small_row, small_col):
             self.large_board[large_row, large_col, self.current_player] = 1
-            self.large_board[large_row, large_col, 2] = 0
+            self.large_board[large_row, large_col, 3] = 0
             self.board[large_row, large_col, ...] = self.completed_square[self.current_player]
 
             # Check for a win in the large board
             if self.check_large_board_win(large_row, large_col):
-                self.winner = self.current_player
+                self.outcome = self.current_player
                 print(f"Player {self.current_player} wins!!!")
+
+        elif np.sum(self.board[..., 2]) == 0:
+            self.large_board[large_row, large_col, 2] = 1
+            self.large_board[large_row, large_col, 3] = 0
+
+            if np.sum(self.large_board[..., 3]) == 0:
+                self.outcome = 2
             
-        if self.large_board[small_row, small_col, 2] == 0:
-            self.legal_zones = self.large_board[..., 2]
+        if self.large_board[small_row, small_col, 3] == 0:
+            self.legal_zones = self.large_board[..., 3]
         else:
             self.legal_zones = np.zeros((3,3))
             self.legal_zones[small_row, small_col] = 1
@@ -114,8 +122,8 @@ class UltimateTicTacToe:
             np.all(win_array, axis=-1)
         )
     
-    def get_winner(self):
-        return self.winner
+    def get_outcome(self):
+        return self.outcome
     
     def get_current_player(self):
         return self.current_player
@@ -126,16 +134,16 @@ class UltimateTicTacToe:
             self.large_board.flatten(),
             self.legal_zones.flatten(),
             self.eye2[self.current_player],
-            self.eye3[self.winner]
+            self.eye4[self.outcome]
         ], axis=0).astype(np.float32)
     
     def load_game_state(self, game_state):
-        assert len(game_state) == 284
+        assert len(game_state) == 294
         self.board = game_state[0:243].reshape(self.board.shape)
-        self.large_board = game_state[243:270].reshape(self.large_board.shape)
-        self.legal_zones = game_state[270:279].reshape(self.legal_zones.shape)
-        self.current_player = np.argmax(game_state[279:281])
-        self.winner = np.argmax(game_state[281:])
+        self.large_board = game_state[243:279].reshape(self.large_board.shape)
+        self.legal_zones = game_state[279:288].reshape(self.legal_zones.shape)
+        self.current_player = np.argmax(game_state[288:290])
+        self.outcome = np.argmax(game_state[290:])
 
     def enumerate_possible_moves(self):
         move_list = []
@@ -152,9 +160,9 @@ if __name__ == "main": # Example usage:
     game = UltimateTicTacToe()
     game.display_board()
 
-    while not game.winner:
+    while not game.outcome:
         move = tuple(map(int, input("Enter your move (large_row, large_col, small_row, small_col): ").split()))
         game.make_move(move)
         game.display_board()
 
-    print(f"Player {game.winner} wins!")
+    print(f"Player {game.outcome} wins!")
