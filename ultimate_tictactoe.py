@@ -77,7 +77,7 @@ class UltimateTicTacToe:
                 self.outcome = self.current_player
                 print(f"Player {self.current_player} wins!!!")
 
-        elif np.sum(self.board[..., 2]) == 0:
+        elif np.sum(self.board[large_row, large_col, ..., 2]) == 0:
             self.large_board[large_row, large_col, 2] = 1
             self.large_board[large_row, large_col, 3] = 0
 

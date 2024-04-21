@@ -12,10 +12,11 @@ def get_random_move(current_game):
     return move_choice
 
 def advance_game(current_game, n_moves):
+
     for _ in range(n_moves):
+        if current_game.outcome != 3:
+            return
         move = get_random_move(current_game)
-        if move is None:
-            break
         current_game.make_move(move)
 
 def run_game(policy_0, policy_1, move_latency=0.5, gui=True):
