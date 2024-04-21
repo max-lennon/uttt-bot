@@ -10,20 +10,29 @@ class UltimateTicTacToe:
         self.eye2 = np.eye(2).astype(np.float32)
         self.eye9 = np.eye(9).astype(np.float32)
 
+        self.completed_square = [
+            np.concatenate([np.ones(board_size[2:4]+(1,)), np.zeros(board_size[2:4]+(2,))], axis=-1).astype(np.float32), 
+            np.concatenate([np.zeros(board_size[2:4]+(1,)), np.ones(board_size[2:4]+(1,)), np.zeros(board_size[2:4]+(1,))], axis=-1).astype(np.float32)
+        ]
+
         self.current_player = 0
         self.move_count = 0
         self.legal_zones = np.ones(board_size[:2])
-        self.winner = None
+        self.winner = 2
+
+        self.move_history = []
 
     def display_board(self):
+        large_rows = [[] for _ in range(9)]
         for i in range(self.board_size[0]):
             for j in range(self.board_size[1]):
-                print(f"Large Board [{i}][{j}]:")
                 for k in range(self.board_size[2]):
-                    for l in range(self.board_size[3]):
-                        cell_value = self.board[i][j][k][l]
-                        print(self.board_symbol(cell_value), end=" ")
-                    print()
+                    sub_row = " ".join([self.board_symbol(cell) for cell in self.board[i][j][k]])
+                    large_rows[i*3+k].append(sub_row)
+
+        for i in range(9):
+            print("   ".join(large_rows[i]))
+            if i % 3 == 2:
                 print()
 
     def board_symbol(self, cell):
@@ -38,16 +47,14 @@ class UltimateTicTacToe:
         large_row, large_col, small_row, small_col = move
 
         # Check if the move is valid
-        game_over = self.winner is not None
+        game_over = self.winner < 2
         spot_taken = self.board[large_row, large_col, small_row, small_col, 2] == 0
-        # sub_game_over = self.large_board[large_row, large_col, 2] == 0
-        # prev_sub_game_over = self.large_board[self.last_move[0], self.last_move[1], 2] == 0 if self.last_move is not None else False
-        legal_zone = self.legal_zones[large_row, large_col] == 1
+        illegal_zone = self.legal_zones[large_row, large_col] == 0
 
         if (
             game_over
             or spot_taken
-            or not legal_zone
+            or illegal_zone
         ):
             print("Invalid move. Try again.")
             return False
@@ -56,10 +63,13 @@ class UltimateTicTacToe:
         self.board[large_row, large_col, small_row, small_col, self.current_player] = 1
         self.board[large_row, large_col, small_row, small_col, 2] = 0
 
+        self.move_history.append(move)
+
         # Check for a win in the small board
         if self.check_small_board_win(large_row, large_col, small_row, small_col):
             self.large_board[large_row, large_col, self.current_player] = 1
             self.large_board[large_row, large_col, 2] = 0
+            self.board[large_row, large_col, ...] = self.completed_square[self.current_player]
 
             # Check for a win in the large board
             if self.check_large_board_win(large_row, large_col):
@@ -110,14 +120,33 @@ class UltimateTicTacToe:
     def get_current_player(self):
         return self.current_player
     
-    def flat_game_state(self):
+    def get_game_state(self):
         return np.concatenate([
             self.board.flatten(),
             self.large_board.flatten(),
             self.legal_zones.flatten(),
-            self.eye2[self.current_player]
+            self.eye2[self.current_player],
+            self.eye3[self.winner]
         ], axis=0).astype(np.float32)
-        
+    
+    def load_game_state(self, game_state):
+        assert len(game_state) == 284
+        self.board = game_state[0:243].reshape(self.board.shape)
+        self.large_board = game_state[243:270].reshape(self.large_board.shape)
+        self.legal_zones = game_state[270:279].reshape(self.legal_zones.shape)
+        self.current_player = np.argmax(game_state[279:281])
+        self.winner = np.argmax(game_state[281:])
+
+    def enumerate_possible_moves(self):
+        move_list = []
+        for large_row in range(3):
+            for large_col in range(3):
+                if self.legal_zones[large_row, large_col]:
+                    for small_coords in zip(*np.nonzero(self.board[large_row, large_col, ..., 2])):
+                        move_list.append((large_row, large_col) + small_coords)
+
+        return move_list
+            
 
 if __name__ == "main": # Example usage:
     game = UltimateTicTacToe()
