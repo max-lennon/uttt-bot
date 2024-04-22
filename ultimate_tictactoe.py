@@ -52,12 +52,17 @@ class UltimateTicTacToe:
         spot_taken = self.board[large_row, large_col, small_row, small_col, 2] == 0
         illegal_zone = self.legal_zones[large_row, large_col] == 0
 
-        if (
-            game_over
-            or spot_taken
-            or illegal_zone
-        ):
-            print("Invalid move. Try again.")
+        if game_over:
+            # print("Invalid move. (game has ended).")
+            # print(move)
+            return False
+        elif spot_taken:
+            print("Invalid move (occupied square).")
+            print(move)
+            return False
+        elif illegal_zone:
+            print("Invalid move (illegal board sector).")
+            print(move)
             return False
 
         # Make the move
